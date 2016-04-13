@@ -1,0 +1,90 @@
+---
+title: "Predictive Assignment rightup"
+Author: David Smerchek
+output: html_document
+keep_md: true
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Acknowledgements:
+#### The data set used here is from the Weight Lifting Exercise Dataset. The original research that produced this data set is published at: Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. Qualitative Activity Recognition of Weight Lifting Exercises. Proceedings of 4th International Conference in Cooperation with SIGCHI (Augmented Human '13). Stuttgart, Germany: ACM SIGCHI, 2013.
+
+## BackGround:
+#### Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+```{r echo=FALSE}
+library(ggplot2)
+library(scales)
+library(dplyr)
+library(caret)
+library(e1071)
+library(randomForest)
+library(lubridate)
+library(Hmisc)
+library(foreach)
+library(doParallel)
+library(rpart.plot)
+library(lattice)
+library(RGtk2)
+library(rattle)
+```
+#### Read in the data for training and testing data sets
+```{r echo=TRUE}
+training_data <- read.csv('D:\\downloads\\Class\\assignments\\Practical Machine Learning\\pml-training.csv', row.names = 1, stringsAsFactors = FALSE,
+           na.strings = c("NA", "", "#DIV/0!"))
+testing_data <- read.csv('D:\\downloads\\Class\\assignments\\Practical Machine Learnin\\pml-testing.csv', row.names = 1, stringsAsFactors = FALSE,
+           na.strings = c("NA", "", "#DIV/0!"))
+```
+```{r echo=FALSE}
+#dim(training_data)
+#str(training_data)
+#head(training_data)
+```
+#### Looking at the data there are allot of na records will have to filter out
+```{r echo=TRUE}
+## get the good data columns that apply can be focused on
+gooddatacolumns <- colnames(training_data[colSums(is.na(training_data)) == 0])[-(1:7)]
+gooddatatrain <- training_data[gooddatacolumns]
+gooddatatrain$classe <- factor(gooddatatrain$classe)
+
+gooddatacolumnst <- colnames(testing_data[colSums(is.na(testing_data)) == 0])[-(1:7)]
+gooddatatest <- testing_data[gooddatacolumnst]
+```
+## create a traing and testing exampes
+```{r echo=TRUE}
+inTrain=createDataPartition(y=gooddatatrain$classe, p=0.6, list=FALSE)
+    trainingdata <-gooddatatrain[inTrain,]
+    testingdata <- gooddatatrain[-inTrain,]
+```
+##fitting the model
+## use rpart
+```{r echo=TRUE}
+ modfit1 <- train(classe ~ .,method='rpart',data=trainingdata)
+    fancyRpartPlot(modfit1$finalModel) 
+    pred=predict(modfit1,newdata=testingdata)
+    z=confusionMatrix(pred,testingdata$classe)
+    z$table
+    z$overall[1]
+```
+### only has 49% so will reject
+##Random forest method to do the prediction
+```{r echo=TRUE}
+modfit2=randomForest(classe~., data=trainingdata, method='class')
+    pred2 = predict(modfit2,testingdata,type='class') 
+    qplot(pitch_belt, magnet_dumbbell_y, colour=classe, data=trainingdata) 
+    z2=confusionMatrix(pred2,testingdata$classe)
+    z2$table
+   z2$overall[1]
+```
+##If 99% we will accept this predictive model
+##Conclusion
+## we will use the random forest method to go against the testing data
+```{r echo=TRUE}
+pred3 =  predict(modfit2,gooddatatest,type='class')
+pred3
+```
+
+
+
+
